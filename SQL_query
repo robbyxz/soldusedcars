@@ -1,0 +1,205 @@
+-- Data cleaning and exploring
+
+
+-- Checking columns data type
+SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'bmw'
+
+select * from bmw
+
+-- 1. What is an average mileage of Bmw cars
+
+SELECT avg(mileage) as BMW_AVG_MILEAGE
+FROM dbo.bmw
+
+-- 2. Compare average MPG on different type of transmissions: automatic and manual of BMW cars.
+
+SELECT transmission,
+		avg(mpg) as AVG_MPG
+		
+from dbo.bmw
+WHERE transmission IN('Automatic','Manual')
+GROUP BY transmission
+
+-- 3. Contrast rest of cars with average MPG and compare to BMW
+
+SELECT	'BMW' AS BRAND, avg(mpg) as AVG_MPG FROM dbo.bmw
+UNION
+SELECT	'Audi', avg(mpg) from dbo.audi
+UNION
+SELECT	'Ford', avg(mpg) from dbo.ford
+UNION
+SELECT	'Hyundai', avg(mpg) from dbo.hyundi
+UNION
+SELECT	'Mercedes', avg(mpg) from dbo.merc
+UNION
+SELECT	'Skoda', avg(mpg) from dbo.skoda
+UNION
+SELECT	'Vauxhall', avg(mpg) from dbo.vauxhall
+UNION
+SELECT	'VW', avg(mpg) from dbo.vw
+
+
+
+-- 4. Please determine the count of BMW cars in three price categories: under $10,000, between $10,000 and $20,000, and over $20,000.
+
+
+SELECT 'BMW' AS Brand,
+    SUM(CASE WHEN price < 10000 THEN 1 ELSE 0 END) AS Under_10000,
+    SUM(CASE WHEN price >= 10000 AND price <= 20000 THEN 1 ELSE 0 END) AS Between_10000_and_20000,
+    SUM(CASE WHEN price > 20000 THEN 1 ELSE 0 END) AS Over_20000
+FROM dbo.bmw
+
+-- 5. Top 10 expensive cars (each per brand)
+
+
+
+WITH RankedCars AS (
+    SELECT 'BMW' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'Brand' ORDER BY price desc) AS rn
+    FROM dbo.bmw
+    UNION ALL
+    SELECT 'AUDI' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.audi
+	UNION ALL
+    SELECT 'Ford' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.ford
+	    UNION ALL
+    SELECT 'Hyundai' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.hyundi
+	UNION ALL
+    SELECT 'Mercedes' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.merc
+	UNION ALL
+    SELECT 'Skoda' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.skoda
+	UNION ALL
+    SELECT 'Vauxhall' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.vauxhall
+	UNION ALL
+    SELECT 'VW' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price desc) AS rn
+    FROM dbo.vw
+
+
+)
+SELECT Brand, Model, Year, Price
+FROM RankedCars
+where rn = 1
+order by price desc
+
+
+-- 6. The cheapest sold cars (each per brand)
+
+
+WITH RankedCars AS (
+    SELECT 'BMW' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'Brand' ORDER BY price) AS rn
+    FROM dbo.bmw
+    UNION ALL
+    SELECT 'AUDI' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.audi
+	UNION ALL
+    SELECT 'Ford' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.ford
+	    UNION ALL
+    SELECT 'Hyundai' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.hyundi
+	UNION ALL
+    SELECT 'Mercedes' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.merc
+	UNION ALL
+    SELECT 'Skoda' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.skoda
+	UNION ALL
+    SELECT 'Vauxhall' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.vauxhall
+	UNION ALL
+    SELECT 'VW' as 'brand', model, year, price, 
+           ROW_NUMBER() OVER (PARTITION BY 'brand' ORDER BY price) AS rn
+    FROM dbo.vw
+
+
+)
+SELECT Brand, Model, Year, Price
+FROM RankedCars
+where rn = 1
+order by price
+
+-- 7. Treemap with popularity of sold model cars.
+
+
+SELECT model, SUM(Sold_models) AS Total_Sold_Models
+FROM (
+    SELECT model, COUNT(*) AS Sold_models FROM dbo.bmw GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.audi GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.ford GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.hyundi GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.merc GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.skoda GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.vauxhall GROUP BY model
+    UNION ALL
+    SELECT model, COUNT(*) FROM dbo.vw GROUP BY model
+) AS CombinedData
+GROUP BY model
+ORDER BY Total_Sold_Models DESC;
+
+-- 8. Show trends how was changing gearbox by years
+
+WITH transm AS (
+    SELECT transmission, year, count(*) as sold_cars 
+    FROM dbo.bmw
+	group by transmission, year
+    UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.audi
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.ford
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.hyundi
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.merc
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.skoda
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.vauxhall
+	group by transmission, year
+	UNION ALL
+    SELECT transmission, year, count(*)
+    FROM dbo.vw
+	group by transmission, year
+
+)
+SELECT distinct transmission, Year, sum(sold_cars) as sold_cars2
+FROM transm
+group by transmission, year
+order by sold_cars2 desc
