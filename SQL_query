@@ -1,28 +1,17 @@
--- Data cleaning and exploring
+-- 1. Determine the average mileage of BMW cars.
 
-
--- Checking columns data type
-SELECT COLUMN_NAME, DATA_TYPE 
-FROM INFORMATION_SCHEMA.COLUMNS 
-WHERE TABLE_NAME = 'bmw'
-
-select * from bmw
-
--- 1. What is an average mileage of Bmw cars
-
-SELECT avg(mileage) as BMW_AVG_MILEAGE
+SELECT avg(mileage) as BMW_Average_mileage
 FROM dbo.bmw
 
--- 2. Compare average MPG on different type of transmissions: automatic and manual of BMW cars.
+-- 2. Compare the average MPG of BMW cars with different transmission types: automatic and manual.
 
 SELECT transmission,
-		avg(mpg) as AVG_MPG
-		
-from dbo.bmw
+		avg(mpg) as AVG_MPG		
+FROM dbo.bmw
 WHERE transmission IN('Automatic','Manual')
 GROUP BY transmission
 
--- 3. Contrast rest of cars with average MPG and compare to BMW
+-- 3. Contrast other cars based on their average MPG and compare them to BMW cars.
 
 SELECT	'BMW' AS BRAND, avg(mpg) as AVG_MPG FROM dbo.bmw
 UNION
@@ -42,16 +31,16 @@ SELECT	'VW', avg(mpg) from dbo.vw
 
 
 
--- 4. Please determine the count of BMW cars in three price categories: under $10,000, between $10,000 and $20,000, and over $20,000.
+-- 4. Calculate the count of BMW cars in three price categories: under $10,000, between $10,000 and  $20,000, and over $20,000.
 
 
-SELECT 'BMW' AS Brand,
+SELECT 
     SUM(CASE WHEN price < 10000 THEN 1 ELSE 0 END) AS Under_10000,
     SUM(CASE WHEN price >= 10000 AND price <= 20000 THEN 1 ELSE 0 END) AS Between_10000_and_20000,
     SUM(CASE WHEN price > 20000 THEN 1 ELSE 0 END) AS Over_20000
 FROM dbo.bmw
 
--- 5. Top 10 expensive cars (each per brand)
+-- 5. Identify the highest-priced cars that have been sold.
 
 
 
@@ -96,7 +85,7 @@ where rn = 1
 order by price desc
 
 
--- 6. The cheapest sold cars (each per brand)
+-- 6. Identify the lowest-priced cars that have been sold.
 
 
 WITH RankedCars AS (
@@ -139,10 +128,10 @@ FROM RankedCars
 where rn = 1
 order by price
 
--- 7. Treemap with popularity of sold model cars.
+-- 7. Create a treemap to visualize the popularity of sold car models.
 
 
-SELECT model, SUM(Sold_models) AS Total_Sold_Models
+SELECT top 50 model, SUM(Sold_models) AS Total_Sold_Models
 FROM (
     SELECT model, COUNT(*) AS Sold_models FROM dbo.bmw GROUP BY model
     UNION ALL
@@ -163,7 +152,7 @@ FROM (
 GROUP BY model
 ORDER BY Total_Sold_Models DESC;
 
--- 8. Show trends how was changing gearbox by years
+-- 8. Analyze trends in the usage of different transmission types over the years.
 
 WITH transm AS (
     SELECT transmission, year, count(*) as sold_cars 
@@ -203,3 +192,4 @@ SELECT distinct transmission, Year, sum(sold_cars) as sold_cars2
 FROM transm
 group by transmission, year
 order by sold_cars2 desc
+
